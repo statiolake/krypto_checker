@@ -152,7 +152,7 @@ fn enumerate_formulas(indices: &[usize]) -> Vec<Formula> {
 fn compute_impossibles(formulas: &[Formula], cards: &[i32]) -> HashSet<i32> {
     let mut impossibles: HashSet<i32> = (1..=MAX_CARD_NUMBER).collect();
 
-    'order_loop: for order in cards.iter().copied().permutations(5).unique() {
+    'order_loop: for order in permutations(cards).into_iter().unique() {
         for formula in formulas {
             let Ok(value) = formula.apply(&order) else {
                 continue;
@@ -171,12 +171,55 @@ fn compute_impossibles(formulas: &[Formula], cards: &[i32]) -> HashSet<i32> {
     impossibles
 }
 
+fn combinations(values: &[i32], k: usize) -> Vec<Vec<i32>> {
+    if k == 0 {
+        return vec![vec![]];
+    }
+
+    if values.len() < k {
+        return vec![];
+    }
+
+    let mut combs = vec![];
+
+    for i in 0..values.len() {
+        for rest in combinations(&values[i + 1..], k - 1) {
+            let mut hand = vec![values[i]];
+            hand.extend(rest);
+            combs.push(hand.clone());
+        }
+    }
+
+    combs
+}
+
+fn permutations(values: &[i32]) -> Vec<Vec<i32>> {
+    if values.len() <= 1 {
+        return vec![values.to_vec()];
+    }
+
+    let mut perms = vec![];
+
+    for i in 0..values.len() {
+        let mut values = values.to_vec();
+        let picked = values.remove(i);
+        for rest in permutations(&values) {
+            let mut hand = vec![picked];
+            hand.extend(rest);
+            perms.push(hand.clone());
+        }
+    }
+
+    perms
+}
+
 fn main() {
     let entire = repeat_n(1..=MAX_CARD_NUMBER, CARD_DUPLICATES)
         .flatten()
         .sorted()
         .collect_vec();
-    let combs = entire.iter().copied().combinations(NUM_HAND_CARDS).unique();
+    let combs = combinations(&entire, NUM_HAND_CARDS).into_iter().unique();
+    let combs = combs.into_iter().unique();
     let formulas = enumerate_formulas(&(0..NUM_HAND_CARDS).collect_vec());
 
     for hand in combs {
