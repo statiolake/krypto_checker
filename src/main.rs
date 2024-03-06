@@ -80,7 +80,7 @@ impl TryFrom<Rational> for i32 {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 enum Formula {
-    Leaf(i32),
+    Leaf(usize),
     Add(Box<Formula>, Box<Formula>),
     Sub(Box<Formula>, Box<Formula>),
     Mul(Box<Formula>, Box<Formula>),
@@ -88,43 +88,44 @@ enum Formula {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
-struct ZeroDivision;
+struct ZeroDivisionError;
 
 impl Formula {
-    fn compute(&self) -> Result<Rational, ZeroDivision> {
+    fn apply(&self, values: &[i32]) -> Result<Rational, ZeroDivisionError> {
         match self {
-            Formula::Leaf(n) => Ok(Rational::new(*n, 1)),
-            Formula::Add(left, right) => Ok(left.compute()? + right.compute()?),
-            Formula::Sub(left, right) => Ok(left.compute()? - right.compute()?),
-            Formula::Mul(left, right) => Ok(left.compute()? * right.compute()?),
+            Formula::Leaf(index) => Ok(Rational::new(values[*index], 1)),
+            Formula::Add(left, right) => Ok(left.apply(values)? + right.apply(values)?),
+            Formula::Sub(left, right) => Ok(left.apply(values)? - right.apply(values)?),
+            Formula::Mul(left, right) => Ok(left.apply(values)? * right.apply(values)?),
             Formula::Div(left, right) => {
-                let right = right.compute()?;
+                let left = left.apply(values)?;
+                let right = right.apply(values)?;
                 if right != Rational::new(0, 1) {
-                    Ok(left.compute()? / right)
+                    Ok(left / right)
                 } else {
-                    Err(ZeroDivision)
+                    Err(ZeroDivisionError)
                 }
             }
         }
     }
 }
 
-fn enumerate_formulas(cards: &[i32]) -> Vec<Formula> {
-    if cards.len() == 1 {
-        return vec![Formula::Leaf(cards[0])];
+fn enumerate_formulas(indices: &[usize]) -> Vec<Formula> {
+    if indices.len() == 1 {
+        return vec![Formula::Leaf(indices[0])];
     }
 
     let mut res = vec![];
-    for breakpoint in 0..cards.len() {
-        let left = &cards[..breakpoint];
-        let right = &cards[breakpoint..];
+    for break_at in 0..indices.len() {
+        let left_indices = &indices[..break_at];
+        let right_indices = &indices[break_at..];
 
-        if left.is_empty() || right.is_empty() {
+        if left_indices.is_empty() || right_indices.is_empty() {
             continue;
         }
 
-        for left_formula in enumerate_formulas(left) {
-            for right_formula in enumerate_formulas(right) {
+        for left_formula in enumerate_formulas(left_indices) {
+            for right_formula in enumerate_formulas(right_indices) {
                 res.push(Formula::Add(
                     Box::new(left_formula.clone()),
                     Box::new(right_formula.clone()),
@@ -148,12 +149,12 @@ fn enumerate_formulas(cards: &[i32]) -> Vec<Formula> {
     res
 }
 
-fn compute_impossibles(cards: &[i32]) -> HashSet<i32> {
+fn compute_impossibles(formulas: &[Formula], cards: &[i32]) -> HashSet<i32> {
     let mut impossibles: HashSet<i32> = (1..=MAX_CARD_NUMBER).collect();
 
     'order_loop: for order in cards.iter().copied().permutations(5).unique() {
-        for formula in enumerate_formulas(&order) {
-            let Ok(value) = formula.compute() else {
+        for formula in formulas {
+            let Ok(value) = formula.apply(&order) else {
                 continue;
             };
 
@@ -176,9 +177,10 @@ fn main() {
         .sorted()
         .collect_vec();
     let combs = entire.iter().copied().combinations(NUM_HAND_CARDS).unique();
+    let formulas = enumerate_formulas(&(0..NUM_HAND_CARDS).collect_vec());
 
     for hand in combs {
-        let impossibles = compute_impossibles(&hand);
+        let impossibles = compute_impossibles(&formulas, &hand);
         if !impossibles.is_empty() {
             println!("{hand:?} != {impossibles:?}");
         }
