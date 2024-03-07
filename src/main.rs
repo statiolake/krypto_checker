@@ -1,8 +1,9 @@
 use std::{
-    collections::{BTreeSet, HashSet},
-    iter::repeat,
+    collections::HashSet,
     ops::{Add, Div, Mul, Sub},
 };
+
+use itertools::{repeat_n, Itertools};
 
 const MAX_CARD_NUMBER: i32 = 10;
 const CARD_DUPLICATES: usize = 3;
@@ -151,7 +152,7 @@ fn enumerate_formulas(indices: &[usize]) -> Vec<Formula> {
 fn compute_impossibles(formulas: &[Formula], cards: &[i32]) -> HashSet<i32> {
     let mut impossibles: HashSet<i32> = (1..=MAX_CARD_NUMBER).collect();
 
-    'order_loop: for order in permutations(cards).into_iter().collect::<BTreeSet<_>>() {
+    'order_loop: for order in permutations(cards).into_iter().unique() {
         for formula in formulas {
             let Ok(value) = formula.apply(&order) else {
                 continue;
@@ -213,15 +214,13 @@ fn permutations(values: &[i32]) -> Vec<Vec<i32>> {
 }
 
 fn main() {
-    let mut entire: Vec<_> = repeat(1..=MAX_CARD_NUMBER)
-        .take(CARD_DUPLICATES)
+    let entire = repeat_n(1..=MAX_CARD_NUMBER, CARD_DUPLICATES)
         .flatten()
-        .collect();
-    entire.sort();
-    let combs = combinations(&entire, NUM_HAND_CARDS)
-        .into_iter()
-        .collect::<BTreeSet<_>>();
-    let formulas = enumerate_formulas(&(0..NUM_HAND_CARDS).collect::<Vec<_>>());
+        .sorted()
+        .collect_vec();
+    let combs = combinations(&entire, NUM_HAND_CARDS).into_iter().unique();
+    let combs = combs.into_iter().unique();
+    let formulas = enumerate_formulas(&(0..NUM_HAND_CARDS).collect_vec());
 
     for hand in combs {
         let impossibles = compute_impossibles(&formulas, &hand);
