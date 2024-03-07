@@ -6,6 +6,7 @@ use krypto_checker::AssignedFormula;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize)]
+#[serde(tag = "type", rename = "error")]
 pub struct Error {
     reason: String,
 }
@@ -18,8 +19,10 @@ pub struct SolveParams {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[serde(tag = "type", rename = "success")]
 pub struct Answer {
     formula: AssignedFormula,
+    display: String,
 }
 
 struct BadRequest(anyhow::Error);
@@ -69,7 +72,10 @@ async fn solve_get(Query(params): Query<SolveParams>) -> Result<Json<Vec<Answer>
 
     let answers = krypto_checker::find_answers(&cards, target)
         .take(limit)
-        .map(|formula| Answer { formula })
+        .map(|formula| Answer {
+            display: formula.format(),
+            formula,
+        })
         .collect_vec();
 
     Ok(Json(answers))

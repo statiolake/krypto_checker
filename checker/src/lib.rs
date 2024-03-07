@@ -85,6 +85,16 @@ impl IndexFormula {
 }
 
 impl AssignedFormula {
+    pub fn format(&self) -> String {
+        match self {
+            Formula::Leaf(value) => value.to_string(),
+            Formula::Add(left, right) => format!("({} + {})", left.format(), right.format()),
+            Formula::Sub(left, right) => format!("({} - {})", left.format(), right.format()),
+            Formula::Mul(left, right) => format!("({} * {})", left.format(), right.format()),
+            Formula::Div(left, right) => format!("({} / {})", left.format(), right.format()),
+        }
+    }
+
     pub fn compute(&self) -> Result<Rational64, ZeroDivisionError> {
         match self {
             Formula::Leaf(value) => Ok(Rational64::new(*value, 1)),
