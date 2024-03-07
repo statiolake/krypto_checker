@@ -3,13 +3,6 @@
 version = 3
 
 [[package]]
-name = "checker"
-version = "0.1.0"
-dependencies = [
- "itertools",
-]
-
-[[package]]
 name = "either"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -22,4 +15,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
 dependencies = [
  "either",
+]
+
+[[package]]
+name = "krypto_checker"
+version = "0.1.0"
+dependencies = [
+ "itertools",
 ]
