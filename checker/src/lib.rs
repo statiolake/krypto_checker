@@ -7,14 +7,32 @@ use std::{
 use itertools::Itertools;
 use num_rational::Rational64;
 use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum Formula<T> {
+    #[serde(rename = "leaf")]
     Leaf(T),
-    Add(Box<Formula<T>>, Box<Formula<T>>),
-    Sub(Box<Formula<T>>, Box<Formula<T>>),
-    Mul(Box<Formula<T>>, Box<Formula<T>>),
-    Div(Box<Formula<T>>, Box<Formula<T>>),
+    #[serde(rename = "add")]
+    Add(
+        #[serde(rename = "lhs")] Box<Formula<T>>,
+        #[serde(rename = "rhs")] Box<Formula<T>>,
+    ),
+    #[serde(rename = "sub")]
+    Sub(
+        #[serde(rename = "lhs")] Box<Formula<T>>,
+        #[serde(rename = "rhs")] Box<Formula<T>>,
+    ),
+    #[serde(rename = "mul")]
+    Mul(
+        #[serde(rename = "lhs")] Box<Formula<T>>,
+        #[serde(rename = "rhs")] Box<Formula<T>>,
+    ),
+    #[serde(rename = "div")]
+    Div(
+        #[serde(rename = "lhs")] Box<Formula<T>>,
+        #[serde(rename = "rhs")] Box<Formula<T>>,
+    ),
 }
 
 pub type IndexFormula = Formula<usize>;
