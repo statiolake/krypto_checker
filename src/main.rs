@@ -8,81 +8,16 @@ const MAX_CARD_NUMBER: i32 = 10;
 const CARD_DUPLICATES: usize = 3;
 const NUM_HAND_CARDS: usize = 5;
 
-// #[derive(Debug, Clone, Copy, Eq, PartialOrd, Ord)]
-// pub struct Rational {
-//     num: i32,
-//     den: i32,
-// }
-//
-// impl Rational {
-//     pub fn new(num: i32, den: i32) -> Self {
-//         assert_ne!(den, 0);
-//         Rational { num, den }
-//     }
-// }
-//
-// impl Add for Rational {
-//     type Output = Self;
-//
-//     fn add(self, other: Self) -> Self {
-//         Rational::new(
-//             self.num * other.den + other.num * self.den,
-//             self.den * other.den,
-//         )
-//     }
-// }
-//
-// impl Sub for Rational {
-//     type Output = Self;
-//
-//     fn sub(self, other: Self) -> Self {
-//         Rational::new(
-//             self.num * other.den - other.num * self.den,
-//             self.den * other.den,
-//         )
-//     }
-// }
-//
-// impl Mul for Rational {
-//     type Output = Self;
-//
-//     fn mul(self, other: Self) -> Self {
-//         Rational::new(self.num * other.num, self.den * other.den)
-//     }
-// }
-//
-// impl Div for Rational {
-//     type Output = Self;
-//
-//     fn div(self, other: Self) -> Self {
-//         Rational::new(self.num * other.den, self.den * other.num)
-//     }
-// }
-//
-// impl PartialEq for Rational {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.num * other.den == other.num * self.den
-//     }
-// }
-//
-// impl TryFrom<Rational> for i32 {
-//     type Error = Rational;
-//
-//     fn try_from(value: Rational) -> Result<Self, Self::Error> {
-//         if value.num % value.den == 0 {
-//             Ok(value.num / value.den)
-//         } else {
-//             Err(value)
-//         }
-//     }
-// }
-
-#[derive(Debug)]
-struct Rational(f64);
+#[derive(Debug, Clone, Copy, Eq, PartialOrd, Ord)]
+pub struct Rational {
+    num: i32,
+    den: i32,
+}
 
 impl Rational {
-    fn new(num: i32, den: i32) -> Self {
-        Rational((num as f64) / (den as f64))
+    pub fn new(num: i32, den: i32) -> Self {
+        assert_ne!(den, 0);
+        Rational { num, den }
     }
 }
 
@@ -90,7 +25,10 @@ impl Add for Rational {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        Rational(self.0 + other.0)
+        Rational::new(
+            self.num * other.den + other.num * self.den,
+            self.den * other.den,
+        )
     }
 }
 
@@ -98,7 +36,10 @@ impl Sub for Rational {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        Rational(self.0 - other.0)
+        Rational::new(
+            self.num * other.den - other.num * self.den,
+            self.den * other.den,
+        )
     }
 }
 
@@ -106,7 +47,7 @@ impl Mul for Rational {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        Rational(self.0 * other.0)
+        Rational::new(self.num * other.num, self.den * other.den)
     }
 }
 
@@ -114,13 +55,13 @@ impl Div for Rational {
     type Output = Self;
 
     fn div(self, other: Self) -> Self {
-        Rational(self.0 / other.0)
+        Rational::new(self.num * other.den, self.den * other.num)
     }
 }
 
 impl PartialEq for Rational {
     fn eq(&self, other: &Self) -> bool {
-        (self.0 - other.0).abs() < 1e-6
+        self.num * other.den == other.num * self.den
     }
 }
 
@@ -128,21 +69,11 @@ impl TryFrom<Rational> for i32 {
     type Error = Rational;
 
     fn try_from(value: Rational) -> Result<Self, Self::Error> {
-        if (value.0 - value.0.round()).abs() < 1e-6 {
-            Ok(value.0.round() as i32)
+        if value.num % value.den == 0 {
+            Ok(value.num / value.den)
         } else {
             Err(value)
         }
-    }
-}
-
-impl Rational {
-    fn pow(self, other: Self) -> Self {
-        Rational(self.0.powf(other.0))
-    }
-
-    fn root(self, other: Self) -> Self {
-        Rational(self.0.powf(1.0 / other.0))
     }
 }
 
@@ -153,8 +84,6 @@ enum Formula {
     Sub(Box<Formula>, Box<Formula>),
     Mul(Box<Formula>, Box<Formula>),
     Div(Box<Formula>, Box<Formula>),
-    Power(Box<Formula>, Box<Formula>),
-    Root(Box<Formula>, Box<Formula>),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -172,16 +101,6 @@ impl Formula {
                 let right = right.apply(values)?;
                 if right != Rational::new(0, 1) {
                     Ok(left / right)
-                } else {
-                    Err(ZeroDivisionError)
-                }
-            }
-            Formula::Power(left, right) => Ok(left.apply(values)?.pow(right.apply(values)?)),
-            Formula::Root(left, right) => {
-                let left = left.apply(values)?;
-                let right = right.apply(values)?;
-                if right != Rational::new(0, 1) {
-                    Ok(left.root(right))
                 } else {
                     Err(ZeroDivisionError)
                 }
@@ -222,14 +141,6 @@ fn enumerate_formulas(indices: &[usize]) -> Vec<Formula> {
                     Box::new(left_formula.clone()),
                     Box::new(right_formula.clone()),
                 ));
-                res.push(Formula::Power(
-                    Box::new(left_formula.clone()),
-                    Box::new(right_formula.clone()),
-                ));
-                res.push(Formula::Root(
-                    Box::new(left_formula.clone()),
-                    Box::new(right_formula.clone()),
-                ));
             }
         }
     }
@@ -248,9 +159,6 @@ fn compute_impossibles(formulas: &[Formula], cards: &[i32]) -> HashSet<i32> {
 
             if let Ok(integer) = i32::try_from(value) {
                 impossibles.remove(&integer);
-                if cards == [1, 9, 9, 10, 10] && integer == 6 {
-                    eprintln!("{:?}: {:?} = {:?}", order, formula, formula.apply(&order));
-                }
             }
 
             if impossibles.is_empty() {
