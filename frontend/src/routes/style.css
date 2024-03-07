@@ -1,0 +1,24 @@
+@import url('https://fonts.googleapis.com/css?family=Exo:400,700');
+
+* {
+	font-family: 'Exo', sans-serif;
+	margin: 0px;
+	padding: 0px;
+}
+
+body {
+	color: #fff;
+	text-align: center;
+}
+
+input {
+	color: #fff;
+}
+
+a {
+	color: #ffffff66;
+}
+
+h1 {
+	font-size: 50px;
+}
