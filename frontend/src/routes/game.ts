@@ -151,6 +151,7 @@ class Parser {
 	}
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = (...args: unknown[]): void => {
 	// console.log(...args);
 };
